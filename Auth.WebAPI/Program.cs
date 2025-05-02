@@ -1,3 +1,7 @@
+using Auth.Infrastructure.Context;
+using Auth.WebAPI;
+using Microsoft.EntityFrameworkCore;
+
 public static class Program
 {
     public static void Main(string[] args)
@@ -6,6 +10,14 @@ public static class Program
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
+
+        builder.Services.AddDbContext<ApplicationDatabaseContext>(options =>
+        {
+            options.UseInMemoryDatabase("AuthDB");
+        });
+
+        DIContainer container = new DIContainer(builder.Services);
+        container.RegisterServices();
 
         var app = builder.Build();
 
