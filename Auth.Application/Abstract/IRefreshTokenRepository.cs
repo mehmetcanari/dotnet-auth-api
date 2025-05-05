@@ -4,7 +4,7 @@ namespace Auth.Application.Abstract;
 
 public interface IRefreshTokenRepository
 {
-    Task<RefreshToken> GetAccountToken(int accountId);
-    Task AddAsync(RefreshToken refreshToken);
-    Task UpdateAsync(RefreshToken refreshToken);
+    Task<RefreshToken> GetRefreshTokenAsync(int accountId);
+    Task AddRefreshTokenAsync(RefreshToken refreshToken);
+    Task UpdateRefreshTokenAsync(RefreshToken refreshToken);
 }

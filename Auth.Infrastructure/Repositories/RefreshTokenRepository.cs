@@ -14,7 +14,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         _context = context;
     }
 
-    public async Task<RefreshToken> GetAccountToken(int accountId)
+    public async Task<RefreshToken> GetRefreshTokenAsync(int accountId)
     {
         try
         {
@@ -37,7 +37,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         }
     }
 
-    public async Task AddAsync(RefreshToken refreshToken)
+    public async Task AddRefreshTokenAsync(RefreshToken refreshToken)
     {
         try
         {
@@ -50,7 +50,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         }
     }
 
-    public async Task UpdateAsync(RefreshToken refreshToken)
+    public async Task UpdateRefreshTokenAsync(RefreshToken refreshToken)
     {
         try
         {

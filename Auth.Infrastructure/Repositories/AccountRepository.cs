@@ -35,6 +35,28 @@ public class AccountRepository : IAccountRepository
             throw new Exception("An error occurred while retrieving the account.", ex);
         }
     }
+    
+    public async Task<Account> GetAccountByEmailAsync(string email)
+    {
+        try
+        {
+            IQueryable<Account> query = _context.Accounts;
+
+            var account = await query.Where(a => a.Email == email)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (account == null)
+            {
+                throw new KeyNotFoundException($"Account with email {email} not found.");
+            }
+            return account;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("An error occurred while retrieving the account.", ex);
+        }
+    }
 
     public async Task AddAccountAsync(Account account)
     {
