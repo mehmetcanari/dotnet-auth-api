@@ -1,10 +1,7 @@
-using System.Security.Claims;
-using System.Text;
 using Auth.Application.Abstract;
 using Auth.Domain.Entities;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
+using Auth.Application.Utility;
 
 namespace Auth.Application.Services;
 
@@ -13,6 +10,7 @@ public class RefreshTokenService : IRefreshTokenService
     private readonly ILogger<RefreshTokenService> _logger;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IAccountRepository _accountRepository;
+    private const double RefreshTokenExpirationTime = 30;
     
     public RefreshTokenService(ILogger<RefreshTokenService> logger, IRefreshTokenRepository refreshTokenRepository, IAccountRepository accountRepository)
     {
@@ -29,9 +27,9 @@ public class RefreshTokenService : IRefreshTokenService
             
             RefreshToken token = new RefreshToken
             {
-                Token = GenerateToken(account.Email, account.Role),
+                Token = TokenGenerateProvider.GenerateToken(account.Email, account.Role, RefreshTokenExpirationTime, TokenGenerateProvider.TokenType.Refresh),
                 CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(30),
+                ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationTime),
                 AccountId = accountId,
             };
             
@@ -85,42 +83,6 @@ public class RefreshTokenService : IRefreshTokenService
         catch (Exception e)
         {
             throw new Exception("An error occurred while revoking the refresh token.", e);
-        }
-    }
-
-    private string GenerateToken(string email, string role)
-    {
-        try
-        {
-            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey ?? throw new InvalidOperationException("JWT_SECRET is not configured")));
-
-            var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
-            var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
-            var expirationMinutes = Environment.GetEnvironmentVariable("JWT_ACCESS_TOKEN_EXPIRATION_MINUTES");
-
-            var claims = new List<Claim>
-            {
-                new(ClaimTypes.Email, email),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new("tokenType", "access"),
-                new(ClaimTypes.Role, role)
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(expirationMinutes)),
-                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating access token");
-            throw;
         }
     }
 }
