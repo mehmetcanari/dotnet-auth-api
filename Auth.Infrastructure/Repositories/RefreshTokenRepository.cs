@@ -1,6 +1,6 @@
 using Auth.Domain.Entities;
 using Auth.Application.Abstract;
-using Auth.Infrastructure.Context;
+using Auth.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace Auth.Infrastructure.Repositories;
@@ -34,6 +34,23 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         catch (Exception ex)
         {
             throw new Exception("An error occurred while retrieving the refresh token.", ex);
+        }
+    }
+
+    public async Task<List<RefreshToken>> GetActiveRefreshTokensAsync()
+    {
+        try
+        {
+            List<RefreshToken> refreshTokens = await _context.RefreshTokens
+                .Where(rt => rt.ExpiresAt > DateTime.UtcNow && rt.IsRevoked == false)
+                .AsNoTracking()
+                .ToListAsync();
+            
+            return refreshTokens;
+        }
+        catch (Exception e)
+        {
+            throw new Exception("An error occurred while retrieving active refresh tokens.", e);
         }
     }
 

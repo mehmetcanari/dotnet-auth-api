@@ -7,4 +7,5 @@ public interface IRefreshTokenRepository
     Task<RefreshToken> GetRefreshTokenAsync(int accountId);
     Task AddRefreshTokenAsync(RefreshToken refreshToken);
     Task UpdateRefreshTokenAsync(RefreshToken refreshToken);
+    Task<List<RefreshToken>> GetActiveRefreshTokensAsync();
 }

@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
-using Auth.Infrastructure.Context;
+using Auth.Persistence.Context;
+using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,6 +12,8 @@ public static class Program
 {
     public static void Main(string[] args)
     {
+        Env.Load();        
+        
         JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
         
         var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +21,6 @@ public static class Program
         builder.Configuration["Jwt:Key"] = Environment.GetEnvironmentVariable("JWT_SECRET");
         builder.Configuration["Jwt:Issuer"] = Environment.GetEnvironmentVariable("JWT_ISSUER");
         builder.Configuration["Jwt:Audience"] = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
-        builder.Configuration["ConnectionStrings:DefaultConnection"] = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
@@ -40,7 +42,7 @@ public static class Program
         var jwtKey = jwtSettings["Key"];
         if (string.IsNullOrEmpty(jwtKey))
         {
-            throw new InvalidOperationException("JWT_KEY is not configured");
+            throw new InvalidOperationException("JWT_KEY is not set in the environment variables.");
         }
 
         var key = Encoding.UTF8.GetBytes(jwtKey);

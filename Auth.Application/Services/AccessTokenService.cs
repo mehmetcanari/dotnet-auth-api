@@ -39,6 +39,7 @@ public class AccessTokenService : IAccessTokenService
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "An error occurred while generating the access token for account ID {AccountId}", accountId);
             throw new Exception("An error occurred while generating the refresh token.", e);
         }
     }

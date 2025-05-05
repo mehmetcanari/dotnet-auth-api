@@ -1,6 +1,6 @@
 using Auth.Application.Abstract;
 using Auth.Domain.Entities;
-using Auth.Infrastructure.Context;
+using Auth.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace Auth.Infrastructure.Repositories;
@@ -68,6 +68,19 @@ public class AccountRepository : IAccountRepository
         catch (Exception ex)
         {
             throw new Exception("An error occurred while adding the account.", ex);
+        }
+    }
+    
+    public async Task RemoveAccountAsync(Account account)
+    {
+        try
+        {
+            _context.Accounts.Remove(account);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("An error occurred while removing the account.", ex);
         }
     }
 }

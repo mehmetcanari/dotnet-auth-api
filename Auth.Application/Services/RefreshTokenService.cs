@@ -24,6 +24,15 @@ public class RefreshTokenService : IRefreshTokenService
         try
         {
             Account account = await _accountRepository.GetAccountByIdAsync(accountId);
+            List<RefreshToken> activeTokens = await _refreshTokenRepository.GetActiveRefreshTokensAsync();
+
+            if (activeTokens.Count != 0)
+            {
+                foreach (RefreshToken refreshToken in activeTokens)
+                {
+                    refreshToken.Revoke();
+                }
+            }
             
             RefreshToken token = new RefreshToken
             {
@@ -37,6 +46,7 @@ public class RefreshTokenService : IRefreshTokenService
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "An error occurred while generating the refresh token for account ID {AccountId}", accountId);
             throw new Exception("An error occurred while generating the refresh token.", e);
         }
     }
@@ -69,6 +79,7 @@ public class RefreshTokenService : IRefreshTokenService
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "An error occurred while validating the refresh token for account ID {AccountId}", accountId);
             throw new Exception("An error occurred while validating the refresh token.", e);
         }
     }
@@ -82,6 +93,7 @@ public class RefreshTokenService : IRefreshTokenService
         }
         catch (Exception e)
         {
+            _logger.LogError(e, "An error occurred while revoking the refresh token for account ID {AccountId}", token.AccountId);
             throw new Exception("An error occurred while revoking the refresh token.", e);
         }
     }
