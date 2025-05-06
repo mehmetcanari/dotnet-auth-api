@@ -3,6 +3,7 @@ using System.Text;
 using Auth.Persistence.Context;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -28,6 +29,11 @@ public static class Program
         builder.Services.AddDbContext<ApplicationDatabaseContext>(options =>
         {
             options.UseInMemoryDatabase("AuthDB");
+        });
+        
+        builder.Services.AddDbContext<ApplicationIdentityDatabaseContext>(options =>
+        {
+            options.UseInMemoryDatabase("AuthIdentityDB");
         });
 
         DiContainer container = new DiContainer(builder.Services);
@@ -70,9 +76,12 @@ public static class Program
                 };
             });
         
-        #endregion
-
         builder.Services.AddAuthorization();
+        #endregion
+        
+        builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationIdentityDatabaseContext>()
+            .AddDefaultTokenProviders();
 
         var app = builder.Build();
 

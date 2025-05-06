@@ -13,30 +13,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
     {
         _context = context;
     }
-
-    public async Task<RefreshToken> GetRefreshTokenAsync(int accountId)
-    {
-        try
-        {
-            IQueryable<RefreshToken> query = _context.RefreshTokens;
-
-            var refreshToken = await query.Where(a => a.AccountId == accountId)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            if (refreshToken == null)
-            {
-                throw new KeyNotFoundException($"Refresh token for account ID {accountId} not found.");
-            }
-
-            return refreshToken;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("An error occurred while retrieving the refresh token.", ex);
-        }
-    }
-
+    
     public async Task<List<RefreshToken>> GetActiveRefreshTokensAsync()
     {
         try
@@ -51,6 +28,23 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         catch (Exception e)
         {
             throw new Exception("An error occurred while retrieving active refresh tokens.", e);
+        }
+    }
+
+    public async Task<List<RefreshToken>> GetRefreshTokensAsync(string email)
+    {
+        try
+        {
+            List<RefreshToken> refreshTokens = await _context.RefreshTokens
+                .Where(a => a.Email == email)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return refreshTokens;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("An error occurred while retrieving the refresh token.", ex);
         }
     }
 

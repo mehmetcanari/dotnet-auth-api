@@ -9,6 +9,7 @@
 
   <ItemGroup>
    <ProjectReference Include="..\Auth.Domain\Auth.Domain.csproj" />
+   <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
   </ItemGroup>
 </Project>

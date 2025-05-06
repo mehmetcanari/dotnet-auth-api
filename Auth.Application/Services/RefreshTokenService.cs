@@ -19,11 +19,17 @@ public class RefreshTokenService : IRefreshTokenService
         _accountRepository = accountRepository;
     }
 
-    public async Task GenerateRefreshTokenAsync(int accountId)
+    public async Task GenerateRefreshTokenAsync(string email)
     {
         try
         {
-            Account account = await _accountRepository.GetAccountByIdAsync(accountId);
+            Account account = await _accountRepository.GetAccountByEmailAsync(email);
+            
+            if (account == null)
+            {
+                throw new KeyNotFoundException($"Account with email {email} not found.");
+            }
+            
             List<RefreshToken> activeTokens = await _refreshTokenRepository.GetActiveRefreshTokensAsync();
 
             if (activeTokens.Count != 0)
@@ -39,48 +45,15 @@ public class RefreshTokenService : IRefreshTokenService
                 Token = TokenGenerateProvider.GenerateToken(account.Email, account.Role, RefreshTokenExpirationTime, TokenGenerateProvider.TokenType.Refresh),
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationTime),
-                AccountId = accountId,
+                Email = account.Email,
             };
             
             await _refreshTokenRepository.AddRefreshTokenAsync(token);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occurred while generating the refresh token for account ID {AccountId}", accountId);
+            _logger.LogError(e, "An error occurred while generating the refresh token for account email {email}", email);
             throw new Exception("An error occurred while generating the refresh token.", e);
-        }
-    }
-
-    public async Task<bool> ValidateRefreshTokenAsync(int accountId)
-    {
-        try
-        {
-            Account account = await _accountRepository.GetAccountByIdAsync(accountId);
-            RefreshToken token = await _refreshTokenRepository.GetRefreshTokenAsync(accountId);
-
-            if (account == null)
-            {
-                throw new KeyNotFoundException($"Account with ID {accountId} not found.");
-            }
-
-            if (token.ExpiresAt < DateTime.UtcNow)
-            {
-                _logger.LogWarning($"Refresh token for account ID {accountId} has expired.");
-                return false;
-            }
-
-            if (token.IsRevoked)
-            {
-                _logger.LogWarning($"Refresh token for account ID {accountId} has been revoked.");
-                return false;
-            }
-            
-            return true;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "An error occurred while validating the refresh token for account ID {AccountId}", accountId);
-            throw new Exception("An error occurred while validating the refresh token.", e);
         }
     }
 
@@ -93,7 +66,7 @@ public class RefreshTokenService : IRefreshTokenService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occurred while revoking the refresh token for account ID {AccountId}", token.AccountId);
+            _logger.LogError(e, "An error occurred while revoking the refresh token for account email {email}", token.Email);
             throw new Exception("An error occurred while revoking the refresh token.", e);
         }
     }

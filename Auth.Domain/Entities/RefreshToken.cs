@@ -6,7 +6,7 @@ public class RefreshToken
     public DateTime CreatedAt { get; init; }
     public DateTime ExpiresAt { get; set; }
     public bool IsRevoked { get; set; }
-    public int AccountId { get; set; }
+    public string Email { get; set; }
 
     public void Revoke()
     {

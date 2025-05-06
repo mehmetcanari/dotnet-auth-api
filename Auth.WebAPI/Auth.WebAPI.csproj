@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Auth.Infrastructure\Auth.Infrastructure.csproj" />
     <ProjectReference Include="..\Auth.Application\Auth.Application.csproj" />
+    <ProjectReference Include="..\Auth.Persistence\Auth.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

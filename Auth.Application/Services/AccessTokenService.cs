@@ -17,16 +17,16 @@ public class AccessTokenService : IAccessTokenService
         _accountRepository = accountRepository;
     }
 
-    public async Task<AccessToken> GenerateAccessTokenAsync(int accountId)
+    public async Task<AccessToken> GenerateAccessTokenAsync(string email)
     {
         try
         {
-            Account account = await _accountRepository.GetAccountByIdAsync(accountId);
+            Account account = await _accountRepository.GetAccountByEmailAsync(email);
 
             if (account == null)
             {
-                _logger.LogWarning($"Account with ID {accountId} not found.");
-                throw new KeyNotFoundException($"Account with ID {accountId} not found.");
+                _logger.LogWarning($"Account with email {email} not found.");
+                throw new KeyNotFoundException($"Account with email {email} not found.");
             }
             
             AccessToken token = new AccessToken
@@ -39,7 +39,7 @@ public class AccessTokenService : IAccessTokenService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occurred while generating the access token for account ID {AccountId}", accountId);
+            _logger.LogError(e, "An error occurred while generating the access token for account email {email}", email);
             throw new Exception("An error occurred while generating the refresh token.", e);
         }
     }
