@@ -1,6 +1,6 @@
 using Auth.Application.Abstract;
 using Auth.Application.DTO;
-using Auth.Domain.Entities;
+using Auth.Application.Utility;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
@@ -15,13 +15,13 @@ public class AuthService : IAuthService
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly ILogger<AuthService> _logger;
     private const string UserRole = "User";
-    
+
     public AuthService(
         UserManager<IdentityUser> userManager,
         SignInManager<IdentityUser> signInManager,
         IAccessTokenService accessTokenService,
-        IRefreshTokenService refreshTokenService, 
-        IAccountService accountService, 
+        IRefreshTokenService refreshTokenService,
+        IAccountService accountService,
         ILogger<AuthService> logger)
     {
         _userManager = userManager;
@@ -32,7 +32,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<string> RegisterAsync(AccountRegisterRequestDto accountRegisterRequestDto)
+    public async Task<bool> RegisterAsync(AccountRegisterRequestDto accountRegisterRequestDto)
     {
         try
         {
@@ -42,22 +42,22 @@ public class AuthService : IAuthService
                 Email = accountRegisterRequestDto.Email,
                 EmailConfirmed = true
             };
-        
+
             var result = await _userManager.CreateAsync(user, accountRegisterRequestDto.Password);
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(user, UserRole);
                 await _accountService.RegisterAccountAsync(accountRegisterRequestDto);
-                return "User registered successfully";
+                return true;
             }
 
             _logger.LogError("User registration failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
-            return "User registration failed";
+            return false;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "An error occurred while registering the user: {Email}", accountRegisterRequestDto.Email);
-            throw;
+            return false;
         }
     }
 
@@ -68,27 +68,31 @@ public class AuthService : IAuthService
             var user = await _userManager.FindByEmailAsync(accountLoginRequestDto.Email);
             if (user == null)
             {
-                throw new Exception("User not found");
+                _logger.LogError("User with email {Email} not found.", accountLoginRequestDto.Email);
+                throw new Exception("User with email {Email} not found.");
             }
 
             var result = await _signInManager.PasswordSignInAsync(user, accountLoginRequestDto.Password, false, false);
-            if (!result.Succeeded) throw new Exception("Invalid login attempt");
-            
+            if (!result.Succeeded)
+            {
+                _logger.LogError("Invalid login attempt for user with email {Email}.", accountLoginRequestDto.Email);
+                throw new Exception("Invalid login attempt.");
+            }
+
             var accessToken = await _accessTokenService.GenerateAccessTokenAsync(accountLoginRequestDto.Email);
             await _refreshTokenService.GenerateRefreshTokenAsync(accountLoginRequestDto.Email);
 
             AuthLoginResponseDto authLoginResponseDto = new()
             {
                 Token = accessToken.Token,
-                Expire = accessToken.Expires,
+                Expire = UtcToLocalConverter.ConvertToLocalTime(accessToken.Expires)
             };
-            
-            return authLoginResponseDto;
 
+            return authLoginResponseDto;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occurred while logging in the user: {Email}", accountLoginRequestDto.Email);
+            _logger.LogError(e, "An unexpected error occurred during login.");
             throw;
         }
     }

@@ -4,7 +4,7 @@ namespace Auth.Application.Abstract;
 
 public interface IAccountService
 {
-    Task RegisterAccountAsync(AccountRegisterRequestDto accountRegisterRequestDto);
+    Task<bool> RegisterAccountAsync(AccountRegisterRequestDto accountRegisterRequestDto);
     Task<AccountResponseDto> GetAccountByEmailAsync(string email);
     Task RemoveAccountAsync(string email);
 }

@@ -11,20 +11,18 @@ namespace Auth.WebAPI;
 
 public static class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         Env.Load();        
         
         JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-        
         var builder = WebApplication.CreateBuilder(args);
+        builder.Services.AddControllers();
+        builder.Services.AddEndpointsApiExplorer();
         
         builder.Configuration["Jwt:Key"] = Environment.GetEnvironmentVariable("JWT_SECRET");
         builder.Configuration["Jwt:Issuer"] = Environment.GetEnvironmentVariable("JWT_ISSUER");
         builder.Configuration["Jwt:Audience"] = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
-
-        builder.Services.AddControllers();
-        builder.Services.AddEndpointsApiExplorer();
 
         builder.Services.AddDbContext<ApplicationDatabaseContext>(options =>
         {
@@ -39,7 +37,7 @@ public static class Program
         DiContainer container = new DiContainer(builder.Services);
         container.RegisterServices();
         
-        #region JWT Authentication
+        #region JWT Configuration
 
         //======================================================
         // JWT AUTHENTICATION SETUP
@@ -78,17 +76,46 @@ public static class Program
         
         builder.Services.AddAuthorization();
         #endregion
-        
+
+        #region Identity Setup
+
         builder.Services.AddIdentity<IdentityUser, IdentityRole>()
             .AddEntityFrameworkStores<ApplicationIdentityDatabaseContext>()
             .AddDefaultTokenProviders();
 
+        #endregion
+
         var app = builder.Build();
+
+        #region Role Initialization
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            await InitializeRoles(services);
+        }
+
+        #endregion
 
         app.UseHttpsRedirection();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
         app.Run();
+    }
+    
+    private static async Task InitializeRoles(IServiceProvider serviceProvider)
+    {
+        var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        string[] roleNames = { "Admin", "User" };
+
+        foreach (var roleName in roleNames)
+        {
+            var roleExist = await roleManager.RoleExistsAsync(roleName);
+            if (!roleExist)
+            {
+                await roleManager.CreateAsync(new IdentityRole(roleName));
+            }
+        }
     }
 }

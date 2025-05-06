@@ -16,7 +16,7 @@ public class AccountService : IAccountService
         _logger = logger;
     }
     
-    public async Task RegisterAccountAsync(AccountRegisterRequestDto accountRegisterRequestDto)
+    public async Task<bool> RegisterAccountAsync(AccountRegisterRequestDto accountRegisterRequestDto)
     {
         try
         {
@@ -32,6 +32,7 @@ public class AccountService : IAccountService
 
             await _accountRepository.AddAccountAsync(account);
             _logger.LogInformation("Account registered: {Email}", account.Email);
+            return true;
         }
         catch (Exception e)
         {
