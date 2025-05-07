@@ -65,7 +65,7 @@ public class AuthController : ControllerBase
     }
     
     [Authorize]
-    [HttpGet("logout")]
+    [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
         try

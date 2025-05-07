@@ -23,7 +23,7 @@ Content-Type: application/json
 }
 
 ### LOGOUT
-GET {{baseUrl}}/auth/logout
+POST {{baseUrl}}/auth/logout
 
 ### REFRESH TOKEN
 
