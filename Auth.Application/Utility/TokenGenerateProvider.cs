@@ -26,7 +26,7 @@ public static class TokenGenerateProvider
             
             var claims = new List<Claim>
             {
-                new(ClaimTypes.Email, email),
+                new(JwtRegisteredClaimNames.Email, email),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new("tokenType", "access"),
                 new(ClaimTypes.Role, role)

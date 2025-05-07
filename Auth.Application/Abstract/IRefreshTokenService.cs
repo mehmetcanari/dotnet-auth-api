@@ -1,9 +1,11 @@
 using Auth.Domain.Entities;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Auth.Application.Abstract;
 
 public interface IRefreshTokenService
 {
-    Task GenerateRefreshTokenAsync(string email);
-    Task RevokeRefreshTokenAsync(RefreshToken token);
+    Task<RefreshToken> GenerateRefreshTokenAsync(string email);
+    Task<string> ValidateRefreshTokenAsync(string token);
+    Task RemoveRefreshTokenAsync(string email);
 }

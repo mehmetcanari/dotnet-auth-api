@@ -64,19 +64,4 @@ public class AccountService : IAccountService
             throw;
         }
     }
-    
-    public async Task RemoveAccountAsync(string email)
-    {
-        try
-        {
-            var account = await _accountRepository.GetAccountByEmailAsync(email);
-            await _accountRepository.RemoveAccountAsync(account);
-            _logger.LogInformation("Account removed: {Email}", email);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Error removing account: {Email}", email);
-            throw;
-        }
-    }
 }

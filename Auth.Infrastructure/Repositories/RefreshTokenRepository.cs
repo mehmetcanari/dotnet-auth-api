@@ -2,24 +2,29 @@ using Auth.Domain.Entities;
 using Auth.Application.Abstract;
 using Auth.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Auth.Infrastructure.Repositories;
 
 public class RefreshTokenRepository : IRefreshTokenRepository
 {
     private readonly ApplicationDatabaseContext _context;
+    private readonly ILogger<RefreshTokenRepository> _logger;
 
-    public RefreshTokenRepository(ApplicationDatabaseContext context)
+    public RefreshTokenRepository(ApplicationDatabaseContext context, ILogger<RefreshTokenRepository> logger)
     {
         _context = context;
+        _logger = logger;
     }
     
-    public async Task<List<RefreshToken>> GetActiveRefreshTokensAsync()
+    public async Task<List<RefreshToken>> GetActiveRefreshTokensAsync(string email)
     {
         try
         {
             List<RefreshToken> refreshTokens = await _context.RefreshTokens
-                .Where(rt => rt.ExpiresAt > DateTime.UtcNow && rt.IsRevoked == false)
+                .Where(rt => rt.ExpiresAt > DateTime.UtcNow 
+                             && rt.IsRevoked == false 
+                             && rt.Email == email)
                 .AsNoTracking()
                 .ToListAsync();
             
@@ -27,24 +32,51 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         }
         catch (Exception e)
         {
-            throw new Exception("An error occurred while retrieving active refresh tokens.", e);
+            _logger.LogError(e, "An error occurred while retrieving active refresh tokens.");
+            throw;
         }
     }
 
-    public async Task<List<RefreshToken>> GetRefreshTokensAsync(string email)
+    public async Task RemoveRefreshTokensAsync(string email)
     {
         try
         {
-            List<RefreshToken> refreshTokens = await _context.RefreshTokens
-                .Where(a => a.Email == email)
-                .AsNoTracking()
-                .ToListAsync();
+            var refreshTokens = await GetActiveRefreshTokensAsync(email);
 
-            return refreshTokens;
+            foreach (var token in refreshTokens)
+            {
+                token.Revoke();
+            }
+            
+            _context.RefreshTokens.UpdateRange(refreshTokens);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occurred while removing the refresh token.");
+            throw;
+        }
+    }
+    
+    public async Task<RefreshToken> GetRefreshTokenByTokenAsync(string token)
+    {
+        try
+        {
+            var refreshToken = await _context.RefreshTokens
+                .Where(rt => rt.Token == token && rt.IsRevoked == false)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+            if (refreshToken == null)
+            {
+                throw new KeyNotFoundException($"Refresh token {token} not found.");
+            }
+            
+            return refreshToken;
         }
         catch (Exception ex)
         {
-            throw new Exception("An error occurred while retrieving the refresh token.", ex);
+            _logger.LogError(ex, "An error occurred while retrieving the refresh token {Token}", token);
+            throw;
         }
     }
 
@@ -57,20 +89,8 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         }
         catch (Exception ex)
         {
-            throw new Exception("An error occurred while adding the refresh token.", ex);
-        }
-    }
-
-    public async Task UpdateRefreshTokenAsync(RefreshToken refreshToken)
-    {
-        try
-        {
-            _context.RefreshTokens.Update(refreshToken);
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("An error occurred while updating the refresh token.", ex);
+            _logger.LogError(ex, "An error occurred while adding the refresh token.");
+            throw;
         }
     }
 }

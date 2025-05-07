@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Auth.WebAPI.Controller;
 
 [ApiController]
-[Authorize]
 [Route("api/[controller]")]
 public class AccountController : ControllerBase
 {
@@ -18,6 +17,7 @@ public class AccountController : ControllerBase
         _accountService = accountService;
     }
     
+    [Authorize]
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {

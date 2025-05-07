@@ -4,8 +4,8 @@ namespace Auth.Application.Abstract;
 
 public interface IRefreshTokenRepository
 {
-    Task<List<RefreshToken>> GetRefreshTokensAsync(string email);
+    Task<RefreshToken> GetRefreshTokenByTokenAsync(string token);
+    Task<List<RefreshToken>> GetActiveRefreshTokensAsync(string email);
     Task AddRefreshTokenAsync(RefreshToken refreshToken);
-    Task UpdateRefreshTokenAsync(RefreshToken refreshToken);
-    Task<List<RefreshToken>> GetActiveRefreshTokensAsync();
+    Task RemoveRefreshTokensAsync(string email);
 }

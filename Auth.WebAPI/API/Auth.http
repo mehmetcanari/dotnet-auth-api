@@ -21,3 +21,10 @@ Content-Type: application/json
   "Email": "johndoe@test.com",
   "Password": "@TestPwd123"
 }
+
+### LOGOUT
+GET {{baseUrl}}/auth/logout
+
+### REFRESH TOKEN
+
+GET {{baseUrl}}/auth/refresh-token

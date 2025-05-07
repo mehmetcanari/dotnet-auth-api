@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using Auth.Persistence.Context;
 using DotNetEnv;
@@ -19,6 +20,7 @@ public static class Program
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddHttpContextAccessor();
         
         builder.Configuration["Jwt:Key"] = Environment.GetEnvironmentVariable("JWT_SECRET");
         builder.Configuration["Jwt:Issuer"] = Environment.GetEnvironmentVariable("JWT_ISSUER");
@@ -70,7 +72,7 @@ public static class Program
                     ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero,
-                    RoleClaimType = System.Security.Claims.ClaimTypes.Role
+                    RoleClaimType = ClaimTypes.Role
                 };
             });
         

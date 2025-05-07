@@ -19,27 +19,19 @@ public class RefreshTokenService : IRefreshTokenService
         _accountRepository = accountRepository;
     }
 
-    public async Task GenerateRefreshTokenAsync(string email)
+    public async Task<RefreshToken> GenerateRefreshTokenAsync(string email)
     {
         try
         {
             Account account = await _accountRepository.GetAccountByEmailAsync(email);
-            
+    
             if (account == null)
             {
                 throw new KeyNotFoundException($"Account with email {email} not found.");
             }
-            
-            List<RefreshToken> activeTokens = await _refreshTokenRepository.GetActiveRefreshTokensAsync();
-
-            if (activeTokens.Count != 0)
-            {
-                foreach (RefreshToken refreshToken in activeTokens)
-                {
-                    refreshToken.Revoke();
-                }
-            }
-            
+    
+            await RevokeActiveTokensAsync(email);
+    
             RefreshToken token = new RefreshToken
             {
                 Token = TokenGenerateProvider.GenerateToken(account.Email, account.Role, RefreshTokenExpirationTime, TokenGenerateProvider.TokenType.Refresh),
@@ -47,8 +39,10 @@ public class RefreshTokenService : IRefreshTokenService
                 ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationTime),
                 Email = account.Email,
             };
-            
+    
             await _refreshTokenRepository.AddRefreshTokenAsync(token);
+            
+            return token;
         }
         catch (Exception e)
         {
@@ -57,17 +51,51 @@ public class RefreshTokenService : IRefreshTokenService
         }
     }
 
-    public Task RevokeRefreshTokenAsync(RefreshToken token)
+    private async Task RevokeActiveTokensAsync(string email)
     {
         try
         {
-            token.Revoke();
-            return _refreshTokenRepository.UpdateRefreshTokenAsync(token);
+            List<RefreshToken> activeTokens = await _refreshTokenRepository.GetActiveRefreshTokensAsync(email);
+    
+            if (activeTokens.Count != 0)
+            {
+                foreach (RefreshToken refreshToken in activeTokens)
+                {
+                    refreshToken.Revoke();
+                }
+            }
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occurred while revoking the refresh token for account email {email}", token.Email);
-            throw new Exception("An error occurred while revoking the refresh token.", e);
+            _logger.LogError(e, "An error occurred while revoking active refresh tokens.");
+            throw new Exception("An error occurred while revoking active refresh tokens.", e);
+        }
+    }
+    
+    public async Task RemoveRefreshTokenAsync(string email)
+    {
+        try
+        {
+            await _refreshTokenRepository.RemoveRefreshTokensAsync(email);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occurred while removing the refresh token for account email {email}", email);
+            throw new Exception("An error occurred while removing the refresh token.", e);
+        }
+    }
+    
+    public async Task<string> ValidateRefreshTokenAsync(string token)
+    {
+        try
+        {
+            RefreshToken refreshToken = await _refreshTokenRepository.GetRefreshTokenByTokenAsync(token);
+            return refreshToken.Email;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "An error occurred while validating the refresh token: {token}", token);
+            throw new Exception("An error occurred while validating the refresh token.", e);
         }
     }
 }
