@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Auth.WebAPI.Controller;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
@@ -21,7 +22,6 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
     
-    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] AccountRegisterRequestDto accountRegisterRequestDto)
     {
@@ -35,16 +35,15 @@ public class AuthController : ControllerBase
                 return Ok(new { message = "User registered successfully." });
             }
 
-            return BadRequest(ServiceResult.Failure("RegistrationFailed", "User registration failed."));
+            return StatusCode(400, ServiceResult.Failure("RegistrationFailed", "User registration failed."));
         }
         catch (Exception e)
         {
             _logger.LogError(e, "An error occurred while registering the user: {Email}", accountRegisterRequestDto.Email);
-            return BadRequest(ServiceResult.Failure("RegistrationFailed", "User registration failed."));
+            return StatusCode(400, ServiceResult.Failure("Error", e.Message));
         }
     }
     
-    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] AccountLoginRequestDto accountLoginRequestDto)
     {
@@ -56,7 +55,7 @@ public class AuthController : ControllerBase
         catch (Exception e)
         {
             _logger.LogError(e, "An error occurred while logging in the user: {Email}", accountLoginRequestDto.Email);
-            return BadRequest(ServiceResult.Failure("LoginFailed", "User login failed."));
+            return StatusCode(400, ServiceResult.Failure("Error", e.Message));
         }
     }
 }
