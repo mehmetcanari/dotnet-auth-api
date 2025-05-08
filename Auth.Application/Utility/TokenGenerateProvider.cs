@@ -8,30 +8,30 @@ namespace Auth.Application.Utility;
 public static class TokenGenerateProvider
 {
     private static DateTime _expiration;
-    
+
     public static string GenerateToken(string email, string role, double expiresIn, TokenType type)
     {
         try
         {
             var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey ?? throw new InvalidOperationException("JWT_SECRET is not configured")));
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(secretKey ??
+                                       throw new InvalidOperationException("JWT_SECRET is not configured")));
 
-            var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
-            var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+            var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
+                          ?? throw new InvalidOperationException("JWT_ISSUER is not configured");
             
-            if (string.IsNullOrEmpty(issuer) || string.IsNullOrEmpty(audience))
-            {
-                throw new InvalidOperationException("JWT_ISSUER or JWT_AUDIENCE is not configured");
-            }
-            
+            var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
+                            ?? throw new InvalidOperationException("JWT_AUDIENCE is not configured");
+
             var claims = new List<Claim>
             {
                 new(JwtRegisteredClaimNames.Email, email),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new("tokenType", "access"),
+                new("tokenType", type == TokenType.Access ? "access" : "refresh"),
                 new(ClaimTypes.Role, role)
             };
-            
+
             switch (type)
             {
                 case TokenType.Access:

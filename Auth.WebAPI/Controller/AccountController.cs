@@ -16,7 +16,7 @@ public class AccountController : ControllerBase
     {
         _accountService = accountService;
     }
-    
+
     [Authorize]
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
@@ -24,9 +24,14 @@ public class AccountController : ControllerBase
         try
         {
             var email = User.FindFirstValue(ClaimTypes.Email);
-            var account = await _accountService.GetAccountByEmailAsync(email);
+            if (email != null)
+            {
+                var account = await _accountService.GetAccountByEmailAsync(email);
 
-            return Ok(account);
+                return Ok(account);
+            }
+            
+            return StatusCode(404, ServiceResult.Failure("Error", "Account not found"));
         }
         catch (Exception e)
         {

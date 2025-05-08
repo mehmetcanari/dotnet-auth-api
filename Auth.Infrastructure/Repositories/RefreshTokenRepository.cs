@@ -42,13 +42,8 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         try
         {
             var refreshTokens = await GetActiveRefreshTokensAsync(email);
-
-            foreach (var token in refreshTokens)
-            {
-                token.Revoke();
-            }
-            
-            _context.RefreshTokens.UpdateRange(refreshTokens);
+            _context.RefreshTokens.RemoveRange(refreshTokens);
+            await _context.SaveChangesAsync();
         }
         catch (Exception e)
         {

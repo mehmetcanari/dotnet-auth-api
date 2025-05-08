@@ -15,9 +15,8 @@ public class AuthService : IAuthService
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly IAccessTokenService _accessTokenService;
     private readonly IRefreshTokenService _refreshTokenService;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<AuthService> _logger;
-    private const string UserRole = "User";
+    private const string DefaultRole = "User";
 
     public AuthService(
         UserManager<IdentityUser> userManager,
@@ -25,7 +24,7 @@ public class AuthService : IAuthService
         IAccessTokenService accessTokenService,
         IRefreshTokenService refreshTokenService,
         IAccountService accountService,
-        ILogger<AuthService> logger, IHttpContextAccessor httpContextAccessor)
+        ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -33,7 +32,6 @@ public class AuthService : IAuthService
         _refreshTokenService = refreshTokenService;
         _accountService = accountService;
         _logger = logger;
-        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<bool> RegisterAsync(AccountRegisterRequestDto accountRegisterRequestDto)
@@ -50,7 +48,7 @@ public class AuthService : IAuthService
             var result = await _userManager.CreateAsync(user, accountRegisterRequestDto.Password);
             if (result.Succeeded)
             {
-                await _userManager.AddToRoleAsync(user, UserRole);
+                await _userManager.AddToRoleAsync(user, DefaultRole);
                 await _accountService.RegisterAccountAsync(accountRegisterRequestDto);
                 return true;
             }
@@ -86,8 +84,6 @@ public class AuthService : IAuthService
             var accessToken = await _accessTokenService.GenerateAccessTokenAsync(accountLoginRequestDto.Email);
             var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(accountLoginRequestDto.Email);
             
-            AddRefreshTokenToCookie(refreshToken.Token, refreshToken.ExpiresAt);
-
             AuthLoginResponseDto authLoginResponseDto = new()
             {
                 Token = accessToken.Token,
@@ -103,53 +99,34 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task LogoutAsync()
+    public async Task LogoutAsync(ClaimsPrincipal userPrincipal)
     {
         try
         {
-            var email = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Email);
-            
-            if (string.IsNullOrEmpty(email))
+            var identityUser = await _userManager.GetUserAsync(userPrincipal);
+            if (identityUser == null)
             {
-                _logger.LogError("User email is missing.");
-                throw new Exception("User email is missing.");
-            }
-            
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                _logger.LogError("User with email {Email} not found.", email);
-                throw new Exception("User with email {Email} not found.");
+                _logger.LogError("User not found.");
+                throw new Exception("User not found.");
             }
 
-            await _signInManager.SignOutAsync();
-            await _refreshTokenService.RemoveRefreshTokenAsync(email);
-            
-            RemoveRefreshTokenFromCookie();
+            if (identityUser.Email != null)
+            {
+                var user = await _userManager.FindByEmailAsync(identityUser.Email);
+                if (user == null)
+                {
+                    _logger.LogError("User with email {Email} not found.", identityUser.Email);
+                    throw new Exception("User with email {Email} not found.");
+                }
+                
+                await _signInManager.SignOutAsync();
+                await _refreshTokenService.RemoveRefreshTokenAsync(identityUser.Email);
+            }
         }
         catch (Exception e)
         {
             _logger.LogError(e, "An error occurred while logging out the user: {Email}", e.Message);
             throw;
         }
-    }
-
-    private void AddRefreshTokenToCookie(string token, DateTime expire)
-    {
-        var httpContext = _httpContextAccessor.HttpContext;
-        httpContext?.Response.Cookies.Append("refreshToken", token,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = expire,
-            });
-    }
-    
-    private void RemoveRefreshTokenFromCookie()
-    {
-        var httpContext = _httpContextAccessor.HttpContext;
-        httpContext?.Response.Cookies.Delete("refreshToken");
     }
 }

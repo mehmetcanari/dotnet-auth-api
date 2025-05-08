@@ -1,5 +1,4 @@
 using Auth.Domain.Entities;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Auth.Application.Abstract;
 

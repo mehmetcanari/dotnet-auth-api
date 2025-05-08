@@ -76,7 +76,7 @@ public class AuthController : ControllerBase
                 return Unauthorized(ServiceResult.Failure("InvalidToken", "User email is missing."));
             }
 
-            await _authService.LogoutAsync();
+            await _authService.LogoutAsync(User);
             return Ok(new { message = "User logged out successfully." });
         }
         catch (Exception e)
