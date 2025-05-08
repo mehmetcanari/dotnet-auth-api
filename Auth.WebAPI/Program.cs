@@ -14,7 +14,7 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        Env.Load();        
+        Env.Load();
         
         JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
         var builder = WebApplication.CreateBuilder(args);
@@ -54,8 +54,7 @@ public static class Program
                     Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
                     Scheme = "bearer",
                     BearerFormat = "JWT",
-                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-                    Description = "Enter 'Bearer' [space] and then your token in the text input below.\n\nExample: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'"
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header
                 });
 
                 c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -150,13 +149,13 @@ public static class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
-        app.Run();
+        await app.RunAsync();
     }
     
     private static async Task InitializeRoles(IServiceProvider serviceProvider)
     {
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        string[] roleNames = { "Admin", "User" };
+        string[] roleNames = ["Admin", "User"];
 
         foreach (var roleName in roleNames)
         {

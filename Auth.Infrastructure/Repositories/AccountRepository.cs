@@ -13,28 +13,6 @@ public class AccountRepository : IAccountRepository
     {
         _context = context;
     }
-
-    public async Task<Account> GetAccountByIdAsync(int accountId)
-    {
-        try
-        {
-            IQueryable<Account> query = _context.Accounts;
-
-            var account = await query.Where(a => a.Id == accountId)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-            if (account == null)
-            {
-                throw new KeyNotFoundException($"Account with ID {accountId} not found.");
-            }
-            return account;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("An error occurred while retrieving the account.", ex);
-        }
-    }
     
     public async Task<Account> GetAccountByEmailAsync(string email)
     {
@@ -68,19 +46,6 @@ public class AccountRepository : IAccountRepository
         catch (Exception ex)
         {
             throw new Exception("An error occurred while adding the account.", ex);
-        }
-    }
-    
-    public async Task RemoveAccountAsync(Account account)
-    {
-        try
-        {
-            _context.Accounts.Remove(account);
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("An error occurred while removing the account.", ex);
         }
     }
 }

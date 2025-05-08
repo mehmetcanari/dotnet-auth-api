@@ -2,7 +2,6 @@ using System.Security.Claims;
 using Auth.Application.Abstract;
 using Auth.Application.DTO;
 using Auth.Application.Utility;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
@@ -82,7 +81,7 @@ public class AuthService : IAuthService
             }
 
             var accessToken = await _accessTokenService.GenerateAccessTokenAsync(accountLoginRequestDto.Email);
-            var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(accountLoginRequestDto.Email);
+            await _refreshTokenService.GenerateRefreshTokenAsync(accountLoginRequestDto.Email);
             
             AuthLoginResponseDto authLoginResponseDto = new()
             {

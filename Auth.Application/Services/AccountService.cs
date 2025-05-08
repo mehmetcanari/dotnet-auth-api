@@ -26,7 +26,6 @@ public class AccountService : IAccountService
                 Surname = accountRegisterRequestDto.Surname,
                 Email = accountRegisterRequestDto.Email,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
                 Role = "User",
             };
 
