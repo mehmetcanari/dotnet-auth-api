@@ -7,40 +7,46 @@ namespace Auth.Application.Services;
 
 public class AccessTokenService : IAccessTokenService
 {
-    private readonly ILogger<RefreshTokenService> _logger;
     private readonly IAccountRepository _accountRepository;
     private const double AccessTokenExpirationTime = 30;
+    private readonly ICurrentUserService _currentUserService;
 
-    public AccessTokenService(ILogger<RefreshTokenService> logger, IAccountRepository accountRepository)
+    public AccessTokenService(
+        IAccountRepository accountRepository, 
+        ICurrentUserService currentUserService)
     {
-        _logger = logger;
         _accountRepository = accountRepository;
+        _currentUserService = currentUserService;
     }
 
-    public async Task<AccessToken> GenerateAccessTokenAsync(string email)
+    public async Task<AccessToken> GenerateAccessTokenAsync()
     {
         try
         {
-            Account account = await _accountRepository.GetAccountByEmailAsync(email);
+            var result = _currentUserService.GetCurrentUserEmail() ?? throw new Exception("User email not found.");
+            if (result.Data != null)
+            {
+                Account account = await _accountRepository.GetAccountByEmailAsync(result.Data);
 
-            if (account == null)
-            {
-                _logger.LogWarning($"Account with email {email} not found.");
-                throw new KeyNotFoundException($"Account with email {email} not found.");
+                if (account == null)
+                {
+                    throw new KeyNotFoundException($"Account with email {result.Data} not found.");
+                }
+            
+                AccessToken token = new AccessToken
+                {
+                    Token = TokenGenerateProvider.GenerateToken(account.Email, account.Role, AccessTokenExpirationTime, TokenGenerateProvider.TokenType.Access),
+                    Expires = DateTime.UtcNow.AddMinutes(AccessTokenExpirationTime)
+                };
+            
+                return token;
             }
-            
-            AccessToken token = new AccessToken
-            {
-                Token = TokenGenerateProvider.GenerateToken(account.Email, account.Role, AccessTokenExpirationTime, TokenGenerateProvider.TokenType.Access),
-                Expires = DateTime.UtcNow.AddMinutes(AccessTokenExpirationTime)
-            };
-            
-            return token;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occurred while generating the access token for account email {email}", email);
             throw new Exception("An error occurred while generating the refresh token.", e);
         }
+        
+        throw new Exception("An error occurred while generating the access token.");
     }
 }

@@ -12,5 +12,6 @@ public class DiContainer(IServiceCollection services)
         services.AddScoped<IAccessTokenService, AccessTokenService>();
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
     }
 }

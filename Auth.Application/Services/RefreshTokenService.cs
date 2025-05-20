@@ -1,4 +1,5 @@
 using Auth.Application.Abstract;
+using Auth.Application.Common.Responses;
 using Auth.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Auth.Application.Utility;
@@ -12,29 +13,37 @@ public class RefreshTokenService : IRefreshTokenService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IAccountRepository _accountRepository;
+    private readonly ICurrentUserService _currentUserService;
     private const double RefreshTokenExpirationTime = 30;
 
     public RefreshTokenService(ILogger<RefreshTokenService> logger, IRefreshTokenRepository refreshTokenRepository,
-        IAccountRepository accountRepository, IHttpContextAccessor httpContextAccessor)
+        IAccountRepository accountRepository, IHttpContextAccessor httpContextAccessor, ICurrentUserService currentUserService)
     {
         _logger = logger;
         _refreshTokenRepository = refreshTokenRepository;
         _accountRepository = accountRepository;
         _httpContextAccessor = httpContextAccessor;
+        _currentUserService = currentUserService;
     }
 
-    public async Task<RefreshToken> GenerateRefreshTokenAsync(string email)
+    public async Task<RefreshToken> GenerateRefreshTokenAsync()
     {
         try
         {
-            Account account = await _accountRepository.GetAccountByEmailAsync(email);
+            var result = _currentUserService.GetCurrentUserEmail();
+            if (result.Data == null)
+            {
+                throw new Exception("User email not found.");
+            }
+            
+            Account account = await _accountRepository.GetAccountByEmailAsync(result.Data);
 
             if (account == null)
             {
-                throw new KeyNotFoundException($"Account with email {email} not found.");
+                throw new KeyNotFoundException($"Account with email not found.");
             }
 
-            await RevokeActiveTokensAsync(email);
+            await RevokeActiveTokensAsync(result.Data);
 
             RefreshToken token = new RefreshToken
             {
@@ -52,8 +61,7 @@ public class RefreshTokenService : IRefreshTokenService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An error occurred while generating the refresh token for account email {email}",
-                email);
+            _logger.LogError(e, "An error occurred while generating the refresh token for account email");
             throw new Exception("An error occurred while generating the refresh token.", e);
         }
     }
@@ -124,5 +132,23 @@ public class RefreshTokenService : IRefreshTokenService
     {
         var httpContext = _httpContextAccessor.HttpContext;
         httpContext?.Response.Cookies.Delete("refreshToken");
+    }
+    
+    private string? GetRefreshTokenFromCookie()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext != null && httpContext.Request.Cookies.ContainsKey("refreshToken"))
+        {
+            string? refreshToken = httpContext.Request.Cookies["refreshToken"];
+            
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                return refreshToken;
+            }
+
+            throw new Exception("Refresh token is empty.");
+        }
+        
+        throw new Exception("Refresh token not found in cookies.");
     }
 }

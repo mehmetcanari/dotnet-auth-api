@@ -22,10 +22,10 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         try
         {
             List<RefreshToken> refreshTokens = await _context.RefreshTokens
+                .AsNoTracking()
                 .Where(rt => rt.ExpiresAt > DateTime.UtcNow 
                              && rt.IsRevoked == false 
                              && rt.Email == email)
-                .AsNoTracking()
                 .ToListAsync();
             
             return refreshTokens;

@@ -5,7 +5,7 @@ namespace Auth.Application.Abstract;
 
 public interface IAuthService
 {
-    Task<bool> RegisterAsync(AccountRegisterRequestDto accountRegisterRequestDto);
+    Task RegisterAsync(AccountRegisterRequestDto accountRegisterRequestDto);
     Task<AuthLoginResponseDto> LoginAsync(AccountLoginRequestDto accountLoginRequestDto);
-    Task LogoutAsync(ClaimsPrincipal claimsPrincipal);
+    Task LogoutAsync();
 }

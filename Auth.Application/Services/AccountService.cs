@@ -8,12 +8,14 @@ namespace Auth.Application.Services;
 public class AccountService : IAccountService
 {
     private readonly IAccountRepository _accountRepository;
+    private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<AccountService> _logger;
 
-    public AccountService(IAccountRepository accountRepository, ILogger<AccountService> logger)
+    public AccountService(IAccountRepository accountRepository, ILogger<AccountService> logger, ICurrentUserService currentUserService)
     {
         _accountRepository = accountRepository;
         _logger = logger;
+        _currentUserService = currentUserService;
     }
     
     public async Task<bool> RegisterAccountAsync(AccountRegisterRequestDto accountRegisterRequestDto)
@@ -40,11 +42,17 @@ public class AccountService : IAccountService
         }
     }
     
-    public async Task<AccountResponseDto> GetAccountByEmailAsync(string email)
+    public async Task<AccountResponseDto> GetAccountByEmailAsync()
     {
         try
         {
-            var account = await _accountRepository.GetAccountByEmailAsync(email);
+            var result = _currentUserService.GetCurrentUserEmail();
+            if (result.Data == null)
+            {
+                throw new Exception("User email not found.");
+            }
+            
+            var account = await _accountRepository.GetAccountByEmailAsync(result.Data);
 
             AccountResponseDto accountResponse = new AccountResponseDto
             {
@@ -54,12 +62,12 @@ public class AccountService : IAccountService
                 Role = account.Role,
             };
 
-            _logger.LogInformation("Account retrieved: {Email}", email);
+            _logger.LogInformation("Account retrieved: {Email}", result.Data);
             return accountResponse;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error retrieving account: {Email}", email);
+            _logger.LogError(e, "Error retrieving account: {Email}", _currentUserService.GetCurrentUserEmail());
             throw;
         }
     }

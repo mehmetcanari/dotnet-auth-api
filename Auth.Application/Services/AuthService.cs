@@ -14,6 +14,7 @@ public class AuthService : IAuthService
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly IAccessTokenService _accessTokenService;
     private readonly IRefreshTokenService _refreshTokenService;
+    private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<AuthService> _logger;
     private const string DefaultRole = "User";
 
@@ -23,7 +24,8 @@ public class AuthService : IAuthService
         IAccessTokenService accessTokenService,
         IRefreshTokenService refreshTokenService,
         IAccountService accountService,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger, 
+        ICurrentUserService currentUserService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -31,9 +33,10 @@ public class AuthService : IAuthService
         _refreshTokenService = refreshTokenService;
         _accountService = accountService;
         _logger = logger;
+        _currentUserService = currentUserService;
     }
 
-    public async Task<bool> RegisterAsync(AccountRegisterRequestDto accountRegisterRequestDto)
+    public async Task RegisterAsync(AccountRegisterRequestDto accountRegisterRequestDto)
     {
         try
         {
@@ -44,21 +47,14 @@ public class AuthService : IAuthService
                 EmailConfirmed = true
             };
 
-            var result = await _userManager.CreateAsync(user, accountRegisterRequestDto.Password);
-            if (result.Succeeded)
-            {
-                await _userManager.AddToRoleAsync(user, DefaultRole);
-                await _accountService.RegisterAccountAsync(accountRegisterRequestDto);
-                return true;
-            }
-
-            _logger.LogError("User registration failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
-            return false;
+            await _userManager.CreateAsync(user, accountRegisterRequestDto.Password);
+            await _userManager.AddToRoleAsync(user, DefaultRole);
+            await _accountService.RegisterAccountAsync(accountRegisterRequestDto);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "An error occurred while registering the user: {Email}", accountRegisterRequestDto.Email);
-            return false;
+            throw new Exception("An error occurred while registering the user.", e);
         }
     }
 
@@ -80,8 +76,8 @@ public class AuthService : IAuthService
                 throw new Exception("Invalid login attempt.");
             }
 
-            var accessToken = await _accessTokenService.GenerateAccessTokenAsync(accountLoginRequestDto.Email);
-            await _refreshTokenService.GenerateRefreshTokenAsync(accountLoginRequestDto.Email);
+            var accessToken = await _accessTokenService.GenerateAccessTokenAsync();
+            await _refreshTokenService.GenerateRefreshTokenAsync();
             
             AuthLoginResponseDto authLoginResponseDto = new()
             {
@@ -98,29 +94,26 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task LogoutAsync(ClaimsPrincipal userPrincipal)
+    public async Task LogoutAsync()
     {
         try
         {
-            var identityUser = await _userManager.GetUserAsync(userPrincipal);
-            if (identityUser == null)
+            var email = _currentUserService.GetCurrentUserEmail();
+            if (email.Data == null)
             {
-                _logger.LogError("User not found.");
-                throw new Exception("User not found.");
+                _logger.LogError("User principal is null.");
+                throw new Exception("User principal is null.");
             }
 
-            if (identityUser.Email != null)
+            var user = await _userManager.FindByEmailAsync(email.Data);
+            if (user == null)
             {
-                var user = await _userManager.FindByEmailAsync(identityUser.Email);
-                if (user == null)
-                {
-                    _logger.LogError("User with email {Email} not found.", identityUser.Email);
-                    throw new Exception("User with email {Email} not found.");
-                }
-                
-                await _signInManager.SignOutAsync();
-                await _refreshTokenService.RemoveRefreshTokenAsync(identityUser.Email);
+                _logger.LogError("User with email {Email} not found.", email.Data);
+                throw new Exception("User with email {Email} not found.");
             }
+                
+            await _signInManager.SignOutAsync();
+            await _refreshTokenService.RemoveRefreshTokenAsync(email.Data);
         }
         catch (Exception e)
         {
