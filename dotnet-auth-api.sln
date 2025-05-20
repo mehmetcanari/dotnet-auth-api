@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.Domain", "Auth.Domain\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.Infrastructure", "Auth.Infrastructure\Auth.Infrastructure.csproj", "{3D77236F-3F3E-E1FC-A653-90CEBBA82EC5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.WebAPI", "Auth.WebAPI\Auth.WebAPI.csproj", "{58232E0F-04CA-83FC-12F8-970364868EEC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.Presentation", "Auth.Presentation\Auth.Presentation.csproj", "{58232E0F-04CA-83FC-12F8-970364868EEC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Auth.Application", "Auth.Application\Auth.Application.csproj", "{9E0E8150-9E3B-EA87-5C9F-68055BC6148B}"
 EndProject
