@@ -19,7 +19,6 @@ Authentication API is a RESTful API developed for robust user authentication and
 | **.NET 9** | Core platform for the API |
 | **ASP.NET Identity** | For user management and authentication |
 | **JWT Authentication** | For secure, token-based authentication |
-| **Redis** | Token storage and blacklisting |
 | **Swagger** | API documentation and testing interface |
 
 ```
